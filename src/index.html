@@ -10,10 +10,25 @@
       margin: 0;
       padding: 0;
     }
+
+    #log {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-size: 30px;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    #log.hidden {
+      display: none;
+    }
   </style>
 </head>
 
 <body>
+  <div id="log">Loading ...</div>
+
   <script type="importmap">
     {
       "imports": {
@@ -24,11 +39,13 @@
   </script>
 
   <script type="module">
+    console.log(1);
     import * as THREE from 'three';
     import { VRButton } from 'three/addons/webxr/VRButton.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+    console.log(2);
 
     const { innerWidth: ww, innerHeight: wh } = window;
 
@@ -61,42 +78,60 @@
 
     // How to load and render a ply file
     // https://chat.openai.com/share/4dabf659-df0d-4ed5-b6d8-6d6d283dac2a
-    new PLYLoader().load('/assets/full-mesh.ply', geometry => {
-      // Get vertex color data from the loaded PLY geometry
-      const colors = geometry.attributes.color;
+    new PLYLoader().load(
+      '/assets/full-mesh.ply',
+      geometry => {
+        // Get vertex color data from the loaded PLY geometry
+        const colors = geometry.attributes.color;
 
-      // Custom shader material
-      const vertexShader = `
-        varying vec3 vColor;
-        void main() {
-          vColor = color;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        // Custom shader material
+        const vertexShader = `
+          varying vec3 vColor;
+          void main() {
+            vColor = color;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `;
+
+        const fragmentShader = `
+          varying vec3 vColor;
+          void main() {
+            gl_FragColor = vec4(vColor, 1.0);
+          }
+        `;
+
+        const material = new THREE.ShaderMaterial({
+          vertexShader,
+          fragmentShader,
+          uniforms: {}, // You can add uniforms here if needed
+          vertexColors: true // Enable vertex colors
+        });
+
+        // Create the mesh using the loaded geometry and custom material
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.scale.set(0.6, 0.6, 0.6);
+        mesh.rotation.x = -0.4;
+        mesh.position.z = -1.5;
+        mesh.position.y = 0.27;
+
+        scene.add(mesh);
+      },
+      xhr => {
+        // This function is called while loading is in progress
+        // The 'xhr' argument contains information about the loading progress
+        const progress = Math.round((xhr.loaded / xhr.total) * 100);
+        log.innerText = `Loading ${progress}% ...`;
+
+        if (progress === 100) {
+          log.innerText = 'Done';
+          setTimeout(() => log.classList.add('hidden'), 2000);
         }
-      `;
-
-      const fragmentShader = `
-        varying vec3 vColor;
-        void main() {
-          gl_FragColor = vec4(vColor, 1.0);
-        }
-      `;
-
-      const material = new THREE.ShaderMaterial({
-        vertexShader,
-        fragmentShader,
-        uniforms: {}, // You can add uniforms here if needed
-        vertexColors: true // Enable vertex colors
-      });
-
-      // Create the mesh using the loaded geometry and custom material
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.scale.set(0.6, 0.6, 0.6);
-      mesh.rotation.x = -0.4;
-      mesh.position.z = -1.5;
-      mesh.position.y = 0.27;
-
-      scene.add(mesh);
-    });
+      },
+      error => {
+        // This function is called if there's an error during loading
+        log.innerText = `Error loading PLY file: ${error.message}`;
+      }
+    );
 
     renderer.setAnimationLoop(function () {
       controls.update();
