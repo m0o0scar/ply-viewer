@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLY Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.155.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.155.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
+
+    const { innerWidth: ww, innerHeight: wh } = window;
+
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(75, ww / wh, 0.1, 1000);
+    camera.position.z = 5;
+
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(ww, wh);
+    renderer.xr.enabled = true;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+
+    const light = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(light);
+
+    // How to load and render a ply file
+    // https://chat.openai.com/share/4dabf659-df0d-4ed5-b6d8-6d6d283dac2a
+    const loader = new PLYLoader();
+    loader.load('/assets/full-mesh.ply', geometry => {
+      // Get vertex color data from the loaded PLY geometry
+      const colors = geometry.attributes.color;
+
+      // Custom shader material
+      const vertexShader = `
+        varying vec3 vColor;
+        void main() {
+          vColor = color;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `;
+
+      const fragmentShader = `
+        varying vec3 vColor;
+        void main() {
+          gl_FragColor = vec4(vColor, 1.0);
+        }
+      `;
+
+      const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        uniforms: {}, // You can add uniforms here if needed
+        vertexColors: true // Enable vertex colors
+      });
+
+      // Create the mesh using the loaded geometry and custom material
+      const mesh = new THREE.Mesh(geometry, material);
+
+      scene.add(mesh);
+    });
+
+    renderer.setAnimationLoop(function () {
+      controls.update();
+      renderer.render(scene, camera);
+    });
+
+  </script>
+</body>
+
+</html>
