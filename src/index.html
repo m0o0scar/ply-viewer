@@ -26,6 +26,7 @@
   <script type="module">
     import * as THREE from 'three';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
 
     const { innerWidth: ww, innerHeight: wh } = window;
@@ -42,13 +43,22 @@
 
     const controls = new OrbitControls(camera, renderer.domElement);
 
-    const light = new THREE.AmbientLight(0xffffff, 0.5);
-    scene.add(light);
+    const axesHelper = new THREE.AxesHelper(1.7);
+    scene.add(axesHelper);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.8));
+
+    // // human placeholder to infer size
+    // new GLTFLoader().load('/assets/mannequin/scene.gltf', gltf => {
+    //   const root = gltf.scene;
+    //   root.position.y = 0.85;
+    //   scene.add(root);
+    // });
 
     // How to load and render a ply file
     // https://chat.openai.com/share/4dabf659-df0d-4ed5-b6d8-6d6d283dac2a
-    const loader = new PLYLoader();
-    loader.load('/assets/full-mesh.ply', geometry => {
+    new PLYLoader().load('/assets/full-mesh.ply', geometry => {
       // Get vertex color data from the loaded PLY geometry
       const colors = geometry.attributes.color;
 
@@ -77,6 +87,9 @@
 
       // Create the mesh using the loaded geometry and custom material
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.scale.set(0.6, 0.6, 0.6);
+      mesh.rotation.x = -0.4
+      mesh.position.y = 0.27
 
       scene.add(mesh);
     });
