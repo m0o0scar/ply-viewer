@@ -25,6 +25,7 @@
 
   <script type="module">
     import * as THREE from 'three';
+    import { VRButton } from 'three/addons/webxr/VRButton.js';
     import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
     import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
     import { PLYLoader } from 'three/addons/loaders/PLYLoader.js';
@@ -39,7 +40,9 @@
     const renderer = new THREE.WebGLRenderer();
     renderer.setSize(ww, wh);
     renderer.xr.enabled = true;
+
     document.body.appendChild(renderer.domElement);
+    document.body.appendChild(VRButton.createButton(renderer));
 
     const controls = new OrbitControls(camera, renderer.domElement);
 
@@ -88,8 +91,9 @@
       // Create the mesh using the loaded geometry and custom material
       const mesh = new THREE.Mesh(geometry, material);
       mesh.scale.set(0.6, 0.6, 0.6);
-      mesh.rotation.x = -0.4
-      mesh.position.y = 0.27
+      mesh.rotation.x = -0.4;
+      mesh.position.z = -1.5;
+      mesh.position.y = 0.27;
 
       scene.add(mesh);
     });
